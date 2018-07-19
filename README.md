@@ -1,7 +1,7 @@
 # Submissions
 Repository to submit individual submissions. 
 
-This is the site for submission of your data challenge projects. For each submission, please use the following structure:
+This is the site for submission of your data challenge projects. For each submission/commit, please use the following suggested structure:
 * /code
 * /summary_output
 * /writeup
