@@ -72,7 +72,7 @@ Download [2017 datasets](https://nhts.ornl.gov/downloads) to `~/data/cvs/`, repl
     - Weighted distribution of TNC trip chains
 
         <p align="center">
-        <img src="https://github.com/xiaobw95/2018-NHTS-Data-Challenge/blob/master/result/table/Cramer_s_V_table.png" alt=""/>
+        <img src="https://github.com/Yiran6/NHTS_DATA_COMPETITION/result/fig/TNC trip chains.png" alt=""/>
         </p>     
 
 - Bayesian Belief Network with Missing Values
