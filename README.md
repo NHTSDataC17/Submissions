@@ -87,7 +87,6 @@ Download [2017 datasets](https://nhts.ornl.gov/downloads) to `~/data/cvs/`, repl
         <img src="https://github.com/xiaobw95/2018-NHTS-Data-Challenge/blob/master/result/fig/Cramer_s_V.PNG" alt=""/>
         </p>
 
-    - BBN
     - BBN without (left) & with (right) missing pattern
         <p align="center">
         <img src="https://github.com/Yiran6/NHTS_DATA_COMPETITION/blob/master/result/fig/BNN_comparison.png" alt=""/>
