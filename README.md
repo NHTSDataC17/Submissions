@@ -3,9 +3,9 @@
 Working space for NHTS Data Challenge.
 
 ## Organization
--  `Summary`: Executive summary with appendix
+-  `writeup`: Executive summary with appendix
 
--  `src`: Any R scripts (`*.R` and `*.Rmd`) and result files (`*.html`).
+-  `code`: Any R scripts (`*.R` and `*.Rmd`) and result files (`*.html`).
 
     - `bootstrap.*`: Comparison of weighted m-out-of-n bootstrap and delete-a-group jackknife resampling.
 
@@ -19,9 +19,9 @@ Working space for NHTS Data Challenge.
 
     - `Semantic-Analysis.*`: Hierarchical n-gram model of transportation transformation.
 
-- `data`: Derived variable configuration.
+    - `data`: Derived variable configuration.
 
-- `result`: Output data, figures and tables.
+- `summary_output`: Output data, figures and tables.
 
     - `data`: Markov chain of transportation transformation obtained by partial-pooling model.
 
@@ -50,7 +50,7 @@ require(packages)
 
 ## Code running set up
 
-Download [2017 datasets](https://nhts.ornl.gov/downloads) to `~/data/cvs/`, replace `derived_variable_config.csv` and knit `src/*.Rmd`
+Download [2017 datasets](https://nhts.ornl.gov/downloads) to `~/data/cvs/`, replace `derived_variable_config.csv` and knit `code/*.Rmd`
 
 ## Method
 

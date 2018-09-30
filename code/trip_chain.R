@@ -7,10 +7,12 @@ library("tidyr")
 library("zoo")
 library("ggplot2")
 
+
 #### read file ####
-setwd("../data")
-per<-read.csv("perpub.csv",header = TRUE)
-trip<-read.csv("trippub.csv",header = TRUE)
+library(summarizeNHTS)
+nhts_data <- read_data("2017", "./data")
+per<-read.csv("./data/csv/2017/person.csv",header = TRUE)
+trip<-read.csv("./data/csv/2017/trip.csv",header = TRUE)
 
 
 ## link files

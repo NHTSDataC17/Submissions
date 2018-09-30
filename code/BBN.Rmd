@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 #load data
 library(summarizeNHTS)
-nhts_data <- read_data("2017", "../data")
+nhts_data <- read_data("2017", "./data")
 
 #data and weights
 df_tnc <- as.data.frame(nhts_data$data$person)

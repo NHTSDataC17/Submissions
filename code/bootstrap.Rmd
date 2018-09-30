@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(summarizeNHTS)
-nhts_data <- read_data("2017", "../data")
+nhts_data <- read_data("2017", "./data")
 
 df_tnc <- as.data.frame(merge(as.data.frame(nhts_data$data$person), 
                               as.data.frame(nhts_data$data$household), 
