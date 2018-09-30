@@ -88,13 +88,9 @@ Download [2017 datasets](https://nhts.ornl.gov/downloads) to `~/data/cvs/`, repl
         </p>
 
     - BBN
+    - BBN without (left) & with (right) missing pattern
         <p align="center">
         <img src="https://github.com/xiaobw95/2018-NHTS-Data-Challenge/blob/master/result/fig/BBN.PNG" alt=""/>
-        </p>
-
-    - BBN with Missing
-        <p align="center">
-        <img src="https://github.com/xiaobw95/2018-NHTS-Data-Challenge/blob/master/result/fig/BBN-with-Missing.PNG" alt=""/>
         </p>
 
 - Bootstrapped Poisson Regression
