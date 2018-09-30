@@ -90,7 +90,7 @@ Download [2017 datasets](https://nhts.ornl.gov/downloads) to `~/data/cvs/`, repl
     - BBN
     - BBN without (left) & with (right) missing pattern
         <p align="center">
-        <img src="https://github.com/xiaobw95/2018-NHTS-Data-Challenge/blob/master/result/fig/BBN.PNG" alt=""/>
+        <img src="https://github.com/Yiran6/NHTS_DATA_COMPETITION/blob/master/result/fig/BNN_comparison.png" alt=""/>
         </p>
 
 - Bootstrapped Poisson Regression
@@ -109,5 +109,5 @@ Download [2017 datasets](https://nhts.ornl.gov/downloads) to `~/data/cvs/`, repl
 
     - Partial-pooling Model Visualization (local)
         <p align="center">
-        <img src="https://github.com/xiaobw95/2018-NHTS-Data-Challenge/blob/master/result/fig/TransportationTransformation.PNG" alt=""/>
+        <img src="https://github.com/Yiran6/NHTS_DATA_COMPETITION/blob/master/result/fig/TransportationTransformation.PNG" alt=""/>
         </p>
