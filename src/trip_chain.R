@@ -8,7 +8,7 @@ library("zoo")
 library("ggplot2")
 
 #### read file ####
-setwd("/Users/wuxiatian/Downloads/0_Research/National_Household_Survey/Survey Data")
+setwd("../data")
 per<-read.csv("perpub.csv",header = TRUE)
 trip<-read.csv("trippub.csv",header = TRUE)
 

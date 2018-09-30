@@ -67,6 +67,13 @@ Download [2017 datasets](https://nhts.ornl.gov/downloads) to `~/data/cvs/`, repl
   This work is inspired by n-gram model in NLP. I used a demographic feature (education level) to build hierarchical models for transportation transformation, and it turned out that partial-pooling model outperformed fully-pooling/non-hierarchical model and no-pooling model.
 
 ## Results
+- Characteristics & Typologies of TNC Trip Chain
+
+    - Weighted distribution of TNC trip chains
+
+        <p align="center">
+        <img src="https://github.com/xiaobw95/2018-NHTS-Data-Challenge/blob/master/result/table/Cramer_s_V_table.png" alt=""/>
+        </p>     
 
 - Bayesian Belief Network with Missing Values
 
