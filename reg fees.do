@@ -92,7 +92,7 @@ replace regfee=35+msrp*.0135 if HHSTATE=="ME" & veh_age==2
 replace regfee=35+msrp*.01 if HHSTATE=="ME" & veh_age==3
 replace regfee=35+msrp*.0065 if HHSTATE=="ME" & veh_age==4
 replace regfee=35+msrp*.004 if HHSTATE=="ME" & veh_age==5
-replace regfee=35 if HHSTATE=="ME" & veh_age>6
+replace regfee=35 if HHSTATE=="ME" & veh_age>=6
 
 /*MD full info:
 Passenger Cars (shipping weight up to 3,700 lbs.): $135.00
@@ -139,7 +139,7 @@ replace regfee=30 if HHSTATE=="MO"
 *some counties in MT also assess vehicle taxes, not accounted for here
 replace regfee=217 if HHSTATE=="MT" & veh_age<5
 replace regfee=87 if HHSTATE=="MT" & veh_age>4 & veh_age<11
-replace regfee=28 if HHSTATE=="MT" & veh_age>11
+replace regfee=28 if HHSTATE=="MT" & veh_age>=11
 
 /*NE is a bit like MI - very complicated:
 https://dmv.nebraska.gov/sites/dmv.nebraska.gov/files/doc/dvr/MV_Tax_Fee_Chart.pdf
