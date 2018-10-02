@@ -1,0 +1,96 @@
+---
+title: "BNN-with-Missing"
+author: "Bowen Xiao"
+date: "September 18, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+```{r}
+#load data
+library(summarizeNHTS)
+nhts_data <- read_data("2017", "./data")
+
+#data and weights
+df_tnc <- as.data.frame(nhts_data$data$person)
+df_tnc <- merge(df_tnc,as.data.frame(nhts_data$weights$person),by=c("HOUSEID","PERSONID"))
+df_tnc <- data.frame(tnc_user=df_tnc$USES_TNC,
+                       education=df_tnc$EDUC,
+                       race=df_tnc$R_RACE,
+                       health=df_tnc$HEALTH,
+                       age=df_tnc$AGE_LEVEL,
+                       gender=df_tnc$R_SEX,
+                       m_tnc=df_tnc$M_TNC,
+                       m_age=df_tnc$M_AGE,
+                       m_gender=df_tnc$M_SEX,
+                       weight=df_tnc$WTPERFIN)
+
+#missing value
+df_tnc[,1:9] <- lapply(df_tnc[,1:9], as.character)
+lambda <- function(x) as.numeric(as.character(x)) > 0
+df_tnc <- df_tnc[lambda(df_tnc$education)&
+                   lambda(df_tnc$race)&
+                   lambda(df_tnc$health)
+                   ,]
+df_tnc[!(lambda(df_tnc$gender)),]$gender <- NA
+
+#fatorize variables
+df_tnc[,1:9] <- lapply(df_tnc[,1:9], factor)
+```
+
+## Nonparametric Imputation (Random Forrest)
+
+```{r}
+library(missForest)
+set.seed(2018)
+data.imp <- missForest(df_tnc,variablewise=TRUE)
+data.imp$OOBerror
+```
+
+## Bayesian Beief Network
+
+```{r message=FALSE}
+library(dplyr)
+library(knitr)
+library(bnlearn)
+library(Rgraphviz)
+
+df_tnc <- data.imp$ximp
+
+#bootstrap-based BNN generator
+arc <- data.frame()
+for(i in 1:1000){
+  temp <- sample_n(df_tnc,0.1*nrow(df_tnc),weight=df_tnc$weight,replace=TRUE)
+  temp <- temp[,1:9]
+  temp[,1:9] <- lapply(temp[,1:9], as.character)
+  temp[,1:9] <- lapply(temp[,1:9], factor)
+  boot <- boot.strength(temp, R = 500, algorithm = "mmpc")
+  arc <- rbind(arc,boot)
+}
+
+#agregate
+Fun1 <- function(x) sum(x)/1000
+Fun2 <- function(x) sd(c(x,rep(0,1000-length(x))))
+bnn <- arc %>%
+        group_by(from, to) %>%
+        summarise(strength=Fun1(strength),
+                  direction=Fun1(direction))
+bnn1 <- arc %>%
+        group_by(from, to) %>%
+        summarise(strength=Fun1(strength),
+                  direction=Fun1(direction),
+                  sd.strength=Fun2(strength),
+                  sd.direction=Fun2(direction))
+class(bnn) <- c("bn.strength","data.frame")
+
+#visualization
+kable(bnn1)
+net=empty.graph(colnames(df_tnc[,1:9]))
+arcs(net) = bnn[bnn$strength>0.05,1:2]
+strength.plot(net,bnn)
+```

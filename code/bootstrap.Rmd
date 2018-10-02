@@ -1,0 +1,309 @@
+---
+title: "Bootstrap"
+author: "Bowen Xiao"
+date: "September 11, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+```{r}
+library(summarizeNHTS)
+nhts_data <- read_data("2017", "./data")
+
+df_tnc <- as.data.frame(merge(as.data.frame(nhts_data$data$person), 
+                              as.data.frame(nhts_data$data$household), 
+                              by='HOUSEID'))
+df_tnc <- merge(df_tnc,as.data.frame(nhts_data$weights$person),by=c("HOUSEID","PERSONID"))
+```
+
+## Generating Estimates with Replicate Weights
+
+```{r}
+est_1 <- summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = c("R_SEX", "USES_TNC"),
+  exclude_missing = TRUE,
+  prop = TRUE
+)
+```
+
+```{r}
+est_2 <- summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = c("R_RACE", "USES_TNC"),
+  exclude_missing = TRUE,
+  prop = TRUE
+)
+```
+
+```{r}
+est_3 <- summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = c("AGE_LEVEL", "USES_TNC"),
+  exclude_missing = TRUE,
+  prop = TRUE
+)
+```
+
+```{r}
+est_4 <- summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = c("HEALTH", "USES_TNC"),
+  exclude_missing = TRUE,
+  prop = TRUE
+)
+```
+
+```{r}
+est_5 <- summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = c("EDUC", "USES_TNC"),
+  exclude_missing = TRUE,
+  prop = TRUE
+)
+```
+
+## m-out-of-n Bootstrap
+
+```{r}
+library(dplyr)
+set.seed(2018)
+```
+
+```{r}
+df <- df_tnc[as.numeric(df_tnc$R_SEX)>0&complete.cases(df_tnc$USES_TNC),]
+df$R_SEX <- as.factor(df$R_SEX)
+best11 <- c()
+best12 <- c()
+bsd11 <- c()
+bsd12 <- c()
+est1 <- c()
+est2 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  for(l in levels(df$R_SEX)){
+    est1 <- c(est1,mean(temp$USES_TNC=='1'&temp$R_SEX==l))
+    est2 <- c(est2,mean(temp$USES_TNC=='2'&temp$R_SEX==l))
+  }
+}
+for(l in 1:nlevels(df$R_SEX)){
+  e1 <- c()
+  e2 <- c()
+  for(i in 1:1000){
+    e1 <- c(e1,est1[nlevels(df$R_SEX)*(i-1)+l])
+    e2 <- c(e2,est2[nlevels(df$R_SEX)*(i-1)+l])
+  }
+  best11 <- c(best11,mean(e1))
+  best12 <- c(best12,mean(e2))
+  bsd11 <- c(bsd11,sd(e1))
+  bsd12 <- c(bsd12,sd(e2))
+}
+```
+
+```{r}
+df <- df_tnc[as.numeric(df_tnc$R_RACE)>0&complete.cases(df_tnc$USES_TNC),]
+df$R_RACE <- as.factor(df$R_RACE)
+best21 <- c()
+best22 <- c()
+bsd21 <- c()
+bsd22 <- c()
+est1 <- c()
+est2 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  for(l in levels(df$R_RACE)){
+    est1 <- c(est1,mean(temp$USES_TNC=='1'&temp$R_RACE==l))
+    est2 <- c(est2,mean(temp$USES_TNC=='2'&temp$R_RACE==l))
+  }
+}
+for(l in 1:nlevels(df$R_RACE)){
+  e1 <- c()
+  e2 <- c()
+  for(i in 1:1000){
+    e1 <- c(e1,est1[nlevels(df$R_RACE)*(i-1)+l])
+    e2 <- c(e2,est2[nlevels(df$R_RACE)*(i-1)+l])
+  }
+  best21 <- c(best21,mean(e1))
+  best22 <- c(best22,mean(e2))
+  bsd21 <- c(bsd21,sd(e1))
+  bsd22 <- c(bsd22,sd(e2))
+}
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$AGE_LEVEL)&complete.cases(df_tnc$USES_TNC),]
+df$AGE_LEVEL <- as.factor(df$AGE_LEVEL)
+best31 <- c()
+best32 <- c()
+bsd31 <- c()
+bsd32 <- c()
+est1 <- c()
+est2 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  for(l in levels(df$AGE_LEVE)){
+    est1 <- c(est1,mean(temp$USES_TNC=='1'&temp$AGE_LEVE==l))
+    est2 <- c(est2,mean(temp$USES_TNC=='2'&temp$AGE_LEVE==l))
+  }
+}
+for(l in 1:nlevels(df$AGE_LEVE)){
+  e1 <- c()
+  e2 <- c()
+  for(i in 1:1000){
+    e1 <- c(e1,est1[nlevels(df$AGE_LEVE)*(i-1)+l])
+    e2 <- c(e2,est2[nlevels(df$AGE_LEVE)*(i-1)+l])
+  }
+  best31 <- c(best31,mean(e1))
+  best32 <- c(best32,mean(e2))
+  bsd31 <- c(bsd31,sd(e1))
+  bsd32 <- c(bsd32,sd(e2))
+}
+```
+
+```{r}
+df <- df_tnc[as.numeric(df_tnc$HEALTH)>0&complete.cases(df_tnc$USES_TNC),]
+df$HEALTH <- as.factor(df$HEALTH)
+best41 <- c()
+best42 <- c()
+bsd41 <- c()
+bsd42 <- c()
+est1 <- c()
+est2 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  for(l in levels(df$HEALTH)){
+    est1 <- c(est1,mean(temp$USES_TNC=='1'&temp$HEALTH==l))
+    est2 <- c(est2,mean(temp$USES_TNC=='2'&temp$HEALTH==l))
+  }
+}
+for(l in 1:nlevels(df$HEALTH)){
+  e1 <- c()
+  e2 <- c()
+  for(i in 1:1000){
+    e1 <- c(e1,est1[nlevels(df$HEALTH)*(i-1)+l])
+    e2 <- c(e2,est2[nlevels(df$HEALTH)*(i-1)+l])
+  }
+  best41 <- c(best41,mean(e1))
+  best42 <- c(best42,mean(e2))
+  bsd41 <- c(bsd41,sd(e1))
+  bsd42 <- c(bsd42,sd(e2))
+}
+```
+
+
+```{r}
+df <- df_tnc[as.numeric(df_tnc$EDUC)>0&complete.cases(df_tnc$USES_TNC),]
+df$EDUC <- as.factor(df$EDUC)
+best51 <- c()
+best52 <- c()
+bsd51 <- c()
+bsd52 <- c()
+est1 <- c()
+est2 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  for(l in levels(df$EDUC)){
+    est1 <- c(est1,mean(temp$USES_TNC=='1'&temp$EDUC==l))
+    est2 <- c(est2,mean(temp$USES_TNC=='2'&temp$EDUC==l))
+  }
+}
+for(l in 1:nlevels(df$EDUC)){
+  e1 <- c()
+  e2 <- c()
+  for(i in 1:1000){
+    e1 <- c(e1,est1[nlevels(df$EDUC)*(i-1)+l])
+    e2 <- c(e2,est2[nlevels(df$EDUC)*(i-1)+l])
+  }
+  best51 <- c(best51,mean(e1))
+  best52 <- c(best52,mean(e2))
+  bsd51 <- c(bsd51,sd(e1))
+  bsd52 <- c(bsd52,sd(e2))
+}
+```
+
+## Comparison
+
+```{r R_SEX}
+dff1 <- c()
+dff2 <- c()
+for(i in 1:length(best11)){
+  dff1 <- c(dff1,best11[i])
+  dff1 <- c(dff1,best12[i])
+  dff2 <- c(dff2,bsd11[i])
+  dff2 <- c(dff2,bsd12[i])
+}
+dff1 <- (dff1-est_1$W)/ifelse(dff1<est_1$W,dff1,est_1$W)
+dff2 <- (dff2-est_1$E)/ifelse(dff2<est_1$E,dff2,est_1$E)
+boxplot(dff1,main='diff ratio of mean of R_SEX')
+boxplot(dff2,main='diff ratio of sd of R_SEX')
+```
+
+```{r R_RACE}
+dff1 <- c()
+dff2 <- c()
+for(i in 1:length(best21)){
+  dff1 <- c(dff1,best21[i])
+  dff1 <- c(dff1,best22[i])
+  dff2 <- c(dff2,bsd21[i])
+  dff2 <- c(dff2,bsd22[i])
+}
+dff1 <- (dff1-est_2$W)/ifelse(dff1<est_2$W,dff1,est_2$W)
+dff2 <- (dff2-est_2$E)/ifelse(dff2<est_2$E,dff2,est_2$E)
+boxplot(dff1,main='diff ratio of mean of R_RACE')
+boxplot(dff2,main='diff ratio of sd of R_RACE')
+```
+
+```{r AGE_LEVEL}
+dff1 <- c()
+dff2 <- c()
+for(i in 1:length(best31)){
+  dff1 <- c(dff1,best31[i])
+  dff1 <- c(dff1,best32[i])
+  dff2 <- c(dff2,bsd31[i])
+  dff2 <- c(dff2,bsd32[i])
+}
+dff1 <- (dff1-est_3$W)/ifelse(dff1<est_3$W,dff1,est_3$W)
+dff2 <- (dff2-est_3$E)/ifelse(dff2<est_3$E,dff2,est_3$E)
+boxplot(dff1,main='diff ratio of mean of AGE_LEVEL')
+boxplot(dff2,main='diff ratio of sd of AGE_LEVEL')
+```
+
+```{r HEALTH}
+dff1 <- c()
+dff2 <- c()
+for(i in 1:length(best41)){
+  dff1 <- c(dff1,best41[i])
+  dff1 <- c(dff1,best42[i])
+  dff2 <- c(dff2,bsd41[i])
+  dff2 <- c(dff2,bsd42[i])
+}
+dff1 <- (dff1-est_4$W)/ifelse(dff1<est_4$W,dff1,est_4$W)
+dff2 <- (dff2-est_4$E)/ifelse(dff2<est_4$E,dff2,est_4$E)
+boxplot(dff1,main='diff ratio of mean of HEALTH')
+boxplot(dff2,main='diff ratio of sd of HEALTH')
+```
+
+```{r EDUC}
+dff1 <- c()
+dff2 <- c()
+for(i in 1:length(best51)){
+  dff1 <- c(dff1,best51[i])
+  dff1 <- c(dff1,best52[i])
+  dff2 <- c(dff2,bsd51[i])
+  dff2 <- c(dff2,bsd52[i])
+}
+dff1 <- (dff1-est_5$W)/ifelse(dff1<est_5$W,dff1,est_5$W)
+dff2 <- (dff2-est_5$E)/ifelse(dff2<est_5$E,dff2,est_5$E)
+boxplot(dff1,main='diff ratio of mean of EDUC')
+boxplot(dff2,main='diff ratio of sd of EDUC')
+```

@@ -1,0 +1,36 @@
+NAME,TABLE,TYPE,DOMAIN,VALUE,LABEL
+MSA_AGG,household,character,"MSACAT %in% c('01','02','03')",1,Metropolitan
+MSA_AGG,household,character,MSACAT %in% '04',2,Not metropolitan
+PRMACT_AGG,person,character,PRMACT %in% '01',1,Working at a job or business
+PRMACT_AGG,person,character,PRMACT %in% '04',2,Keeping house
+PRMACT_AGG,person,character,PRMACT %in% '05',3,Going to school
+PRMACT_AGG,person,character,"PRMACT %in% c('02','03','06','97')",4,Something Else (incl. unemployed)
+WHYTRP90_AGG,trip,character,WHYTRP90 %in% '01',1,Work
+WHYTRP90_AGG,trip,character,"WHYTRP90 %in% c('03','04','06')",2,Shop and Errands
+WHYTRP90_AGG,trip,character,"WHYTRP90 %in% c('07','08','10')",3,Social/Rec
+WHYTRP90_AGG,trip,character,"WHYTRP90 %in% c('02','05','11')",4,Other
+USES_TNC,person,character,RIDESHARE > 0,1,Yes
+USES_TNC,person,character,RIDESHARE == 0,2,No
+IS_BIKER,person,numeric,BIKE4EX > 0,1,Yes
+IS_BIKER,person,numeric,BIKE4EX == 0,2,No
+IS_HYBIRD,vehicle,character,FUELTYPE %in% '03',1,Yes
+IS_HYBIRD,vehicle,character,"FUELTYPE %in% c('01','02','97')",2,No
+IS_BIKE_TRAVELER,household,character,"BIKE %in% c('01','02','03','04')",1,Yes
+IS_BIKE_TRAVELER,household,character,BIKE %in% '05',2,No
+AGE_LEVEL,person,numeric,R_AGE>0 & R_AGE<=30,1,Young
+AGE_LEVEL,person,numeric,R_AGE>30 & R_AGE<=60,2,Middle
+AGE_LEVEL,person,numeric,R_AGE>60,3,Senior
+M_TNC,person,character,RIDESHARE < 0,1,M
+M_TNC,person,character,RIDESHARE >= 0,2,N
+M_SEX,person,character,R_SEX<0,1,M
+M_SEX,person,character,R_SEX>=0,2,N
+M_RACE,person,character,R_RACE<0,1,M
+M_RACE,person,character,R_RACE>=0,2,N
+M_AGE,person,numeric,R_AGE<0,1,M
+M_AGE,person,numeric,R_AGE>=0,2,N
+M_HEALTH,person,character,HEALTH<0,1,M
+M_HEALTH,person,character,HEALTH>=0,2,N
+M_OCCAT,person,character,OCCAT<0,1,M
+M_OCCAT,person,character,OCCAT>=0,2,N
+M_EDUC,person,character,EDUC<0,1,M
+M_EDUC,person,character,EDUC>=0,2,N

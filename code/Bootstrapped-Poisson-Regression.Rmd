@@ -1,0 +1,63 @@
+---
+title: "Bootstrapped-Poisson-Regression"
+author: "Bowen Xiao"
+date: "September 26, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+```{r}
+#load data
+library(summarizeNHTS)
+nhts_data <- read_data("2017", "./data")
+
+library(dplyr)
+df_trip <- data.frame(nhts_data$data$trip)
+df_numTNC <- df_trip %>% mutate(isTNC=as.integer(df_trip$TRPTRANS%in%c('17','18'))) %>% group_by(HOUSEID,PERSONID) %>% summarise(numTNC=sum(isTNC)) %>% merge(data.frame(nhts_data$weights$person),by=c("HOUSEID","PERSONID")) %>% merge(data.frame(nhts_data$data$person),by=c("HOUSEID","PERSONID")) %>% merge(data.frame(nhts_data$data$household),by=c("HOUSEID"))
+```
+
+## Bootstrapped Poisson Regression
+
+```{r}
+getOption("na.action")
+
+lambda <- function(x) as.numeric(as.character(x)) > 0
+df_numTNC <- df_numTNC[lambda(df_numTNC$EDUC)&
+                       complete.cases(df_numTNC$AGE_LEVEL)&
+                       lambda(df_numTNC$URBAN)&
+                       lambda(df_numTNC$OUTOFTWN)&
+                       lambda(df_numTNC$HHFAMINC)&
+                       lambda(df_numTNC$MSASIZE)&
+                       lambda(df_numTNC$HEALTH)&
+                       lambda(df_numTNC$OCCAT)
+                                            ,]
+
+set.seed(2018)
+for(i in 1:1000){
+  temp <- sample_n(df_numTNC,0.1*nrow(df_numTNC),weight=df_numTNC$WTPERFIN,replace=TRUE)
+  model <- glm(numTNC~EDUC+AGE_LEVEL+URBAN+OUTOFTWN+HHFAMINC+OCCAT+HEALTH+MSASIZE,data=temp,family='poisson')
+  if(length(model$coefficients)!=34){
+    i = i - 1
+  }
+  else{
+   if(i==1){
+      coeff <- data.frame(model$coefficients)
+    }
+    else{
+      coeff <- cbind(coeff,data.frame(model$coefficients))
+    } 
+  }
+}
+
+rowSums(coeff)/ncol(coeff)
+apply(as.matrix(coeff),1,sd)
+coeff <- data.frame(t(coeff))
+ggplot(stack(coeff), aes(x = ind, y = values)) +
+    geom_boxplot()+geom_hline(yintercept=0,col=2)+theme(axis.text.x  = element_text(angle=90, vjust=0.5))
+
+```

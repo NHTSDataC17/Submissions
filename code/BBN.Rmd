@@ -1,0 +1,139 @@
+---
+title: "BNN"
+author: "Bowen Xiao"
+date: "September 12, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+```{r}
+#load data
+library(summarizeNHTS)
+nhts_data <- read_data("2017", "./data")
+
+#data and weights
+df_tnc <- as.data.frame(nhts_data$data$person)
+df_tnc <- merge(df_tnc,as.data.frame(nhts_data$weights$person),by=c("HOUSEID","PERSONID"))
+df_tnc <- data.frame(tnc_user=df_tnc$USES_TNC,
+                       education=df_tnc$EDUC,
+                       race=df_tnc$R_RACE,
+                       health=df_tnc$HEALTH,
+                       age=df_tnc$AGE_LEVEL,
+                       gender=df_tnc$R_SEX,
+                       weight=df_tnc$WTPERFIN)
+
+#missing value
+df_tnc[,1:6] <- lapply(df_tnc[,1:6], as.character)
+lambda <- function(x) as.numeric(as.character(x)) > 0
+df_tnc <- df_tnc[complete.cases(df_tnc$tnc_user)&
+                   complete.cases(df_tnc$age)&
+                   lambda(df_tnc$education)&
+                   lambda(df_tnc$race)&
+                   lambda(df_tnc$health)&
+                   lambda(df_tnc$gender),]
+
+#fatorize variables
+df_tnc[,1:6] <- lapply(df_tnc[,1:6], factor)
+```
+
+## Missing Value
+
+```{r}
+summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = "M_TNC",
+  prop = TRUE
+)
+```
+
+```{r}
+summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = "M_SEX",
+  prop = TRUE
+)
+```
+
+```{r}
+summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = "M_RACE",
+  prop = TRUE
+)
+```
+
+```{r}
+summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = "M_AGE",
+  prop = TRUE
+)
+```
+
+```{r}
+summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = "M_HEALTH",
+  prop = TRUE
+)
+```
+
+```{r}
+summarize_data(
+  data = nhts_data,
+  agg = "person_count",
+  by = "M_EDUC",
+  prop = TRUE
+)
+```
+
+## Bayesian Belief Network
+
+```{r message=FALSE}
+library(dplyr)
+library(knitr)
+library(bnlearn)
+library(Rgraphviz)
+
+#bootstrap-based BNN generator
+arc <- data.frame()
+for(i in 1:1000){
+  temp <- sample_n(df_tnc,0.1*nrow(df_tnc),weight=df_tnc$weight,replace=TRUE)
+  temp <- temp[,1:6]
+  temp[,1:6] <- lapply(temp[,1:6], as.character)
+  temp[,1:6] <- lapply(temp[,1:6], factor)
+  boot <- boot.strength(temp, R = 500, algorithm = "mmpc")
+  arc <- rbind(arc,boot)
+}
+
+#agregate
+Fun1 <- function(x) sum(x)/1000
+Fun2 <- function(x) sd(c(x,rep(0,1000-length(x))))
+bnn <- arc %>%
+        group_by(from, to) %>%
+        summarise(strength=Fun1(strength),
+                  direction=Fun1(direction))
+bnn1 <- arc %>%
+        group_by(from, to) %>%
+        summarise(strength=Fun1(strength),
+                  direction=Fun1(direction),
+                  sd.strength=Fun2(strength),
+                  sd.direction=Fun2(direction))
+class(bnn) <- c("bn.strength","data.frame")
+
+#visualization
+kable(bnn1)
+net=empty.graph(colnames(df_tnc[,1:6]))
+arcs(net) = bnn[bnn$strength>0,1:2]
+strength.plot(net,bnn)
+```

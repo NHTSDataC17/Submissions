@@ -1,0 +1,168 @@
+---
+title: "Cramer_s_V"
+author: "Bowen Xiao"
+date: "September 14, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+```{r}
+library(summarizeNHTS)
+nhts_data <- read_data("2017", "./data")
+
+df_tnc <- as.data.frame(merge(as.data.frame(nhts_data$data$person), 
+                              as.data.frame(nhts_data$data$household), 
+                              by='HOUSEID'))
+df_tnc <- merge(df_tnc,as.data.frame(nhts_data$weights$person),by=c("HOUSEID","PERSONID"))
+```
+
+## Replicate Weights
+
+```{r}
+library(survey)
+library(vcd)
+
+df <- df_tnc[complete.cases(df_tnc$EDUC)&as.numeric(df_tnc$EDUC)>0&complete.cases(df_tnc$USES_TNC),]
+dclus <- svydesign(ids=~PERSONID,weights=~df$WTPERFIN, data=df)
+tbl <- svytable(~USES_TNC+EDUC, dclus)
+est_1 <- assocstats(tbl)$cramer
+var_1 <- 0
+for(i in 154:251){
+  dclus <- svydesign(ids=~PERSONID,weights=~df[,i], data=df)
+  tbl <- svytable(~USES_TNC+EDUC, dclus)
+  var_1 <- var_1 + 6*(assocstats(tbl)$cramer - est_1)^2/7
+}
+var_1 <- sqrt(var_1)
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$R_RACE)&as.numeric(df_tnc$R_RACE)>0&complete.cases(df_tnc$USES_TNC),]
+dclus <- svydesign(ids=~PERSONID,weights=~df$WTPERFIN, data=df)
+tbl <- svytable(~USES_TNC+R_RACE, dclus)
+est_2 <- assocstats(tbl)$cramer
+var_2 <- 0
+for(i in 154:251){
+  dclus <- svydesign(ids=~PERSONID,weights=~df[,i], data=df)
+  tbl <- svytable(~USES_TNC+R_RACE, dclus)
+  var_2 <- var_2 + 6*(assocstats(tbl)$cramer - est_2)^2/7
+}
+var_2 <- sqrt(var_2)
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$HEALTH)&as.numeric(df_tnc$HEALTH)>0&complete.cases(df_tnc$USES_TNC),]
+dclus <- svydesign(ids=~PERSONID,weights=~df$WTPERFIN, data=df)
+tbl <- svytable(~USES_TNC+HEALTH, dclus)
+est_3 <- assocstats(tbl)$cramer
+var_3 <- 0
+for(i in 154:251){
+  dclus <- svydesign(ids=~PERSONID,weights=~df[,i], data=df)
+  tbl <- svytable(~USES_TNC+HEALTH, dclus)
+  var_3 <- var_3 + 6*(assocstats(tbl)$cramer - est_3)^2/7
+}
+var_3 <- sqrt(var_3)
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$AGE_LEVEL)&as.numeric(df_tnc$AGE_LEVEL)>0&complete.cases(df_tnc$USES_TNC),]
+dclus <- svydesign(ids=~PERSONID,weights=~df$WTPERFIN, data=df)
+tbl <- svytable(~USES_TNC+AGE_LEVEL, dclus)
+est_4 <- assocstats(tbl)$cramer
+var_4 <- 0
+for(i in 154:251){
+  dclus <- svydesign(ids=~PERSONID,weights=~df[,i], data=df)
+  tbl <- svytable(~USES_TNC+AGE_LEVEL, dclus)
+  var_4 <- var_4 + 6*(assocstats(tbl)$cramer - est_4)^2/7
+}
+var_4 <- sqrt(var_4)
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$R_SEX)&as.numeric(df_tnc$R_SEX)>0&complete.cases(df_tnc$USES_TNC),]
+dclus <- svydesign(ids=~PERSONID,weights=~df$WTPERFIN, data=df)
+tbl <- svytable(~USES_TNC+R_SEX, dclus)
+est_5 <- assocstats(tbl)$cramer
+var_5 <- 0
+for(i in 154:251){
+  dclus <- svydesign(ids=~PERSONID,weights=~df[,i], data=df)
+  tbl <- svytable(~USES_TNC+R_SEX, dclus)
+  var_5 <- var_5 + 6*(assocstats(tbl)$cramer - est_5)^2/7
+}
+var_5 <- sqrt(var_5)
+```
+
+## Bootstrap
+
+```{r}
+library(dplyr)
+
+df <- df_tnc[complete.cases(df_tnc$EDUC)&as.numeric(df_tnc$EDUC)>0&complete.cases(df_tnc$USES_TNC),]
+est1 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  tab <- xtabs(~USES_TNC + EDUC, data = temp)
+  est1 <- c(est1,assocstats(tab)$cramer)
+}
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$R_RACE)&as.numeric(df_tnc$R_RACE)>0&complete.cases(df_tnc$USES_TNC),]
+est2 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  tab <- xtabs(~USES_TNC + R_RACE, data = temp)
+  est2 <- c(est2,assocstats(tab)$cramer)
+}
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$HEALTH)&as.numeric(df_tnc$HEALTH)>0&complete.cases(df_tnc$USES_TNC),]
+est3 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  tab <- xtabs(~USES_TNC + HEALTH, data = temp)
+  est3 <- c(est3,assocstats(tab)$cramer)
+}
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$AGE_LEVEL)&as.numeric(df_tnc$AGE_LEVEL)>0&complete.cases(df_tnc$USES_TNC),]
+est4 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  tab <- xtabs(~USES_TNC + AGE_LEVEL, data = temp)
+  est4 <- c(est4,assocstats(tab)$cramer)
+}
+```
+
+```{r}
+df <- df_tnc[complete.cases(df_tnc$R_SEX)&as.numeric(df_tnc$R_SEX)>0&complete.cases(df_tnc$USES_TNC),]
+est5 <- c()
+for(i in 1:1000){
+  temp <- sample_n(df,0.1*nrow(df),weight=df$WTPERFIN,replace=TRUE)
+  tab <- xtabs(~USES_TNC + R_SEX, data = temp)
+  est5 <- c(est5,assocstats(tab)$cramer)
+}
+```
+
+## Visualization
+
+```{r}
+library(knitr)
+
+kable(data.frame(Var=c('education','race','health','age','gender'),
+                 est.w=c(est_1,est_2,est_3,est_4,est_5),
+                 est.boot=c(mean(est1),mean(est2),mean(est3),mean(est4),mean(est5)),
+                 sd.w=c(var_1,var_2,var_3,var_4,var_5),
+                 sd.boot=c(sd(est1),sd(est2),sd(est3),sd(est4),sd(est5))))
+```
+
+```{r}
+Var <- c('education','race','health','age','gender')
+boxplot(c(est1,est2,est3,est4,est5)~c(rep(Var,each=1000)))
+```

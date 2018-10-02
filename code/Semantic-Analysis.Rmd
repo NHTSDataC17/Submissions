@@ -1,0 +1,211 @@
+---
+title: "Semantic-Analysis"
+author: "Bowen Xiao"
+date: "September 18, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data
+
+```{r}
+#data
+library(summarizeNHTS)
+nhts_data <- read_data("2017", "./data")
+df_trip <- as.data.frame(nhts_data$data$trip)
+df_person <- as.data.frame(nhts_data$data$person)
+
+#tnc data
+df_tnc_person <- df_person[df_person$USES_TNC==1,]
+df_tnc_trip <- merge(df_trip,df_tnc_person,by=c("HOUSEID","PERSONID"))
+df_tnc_trip <- merge(df_tnc_trip,as.data.frame(nhts_data$weights$person),by=c("HOUSEID","PERSONID"))
+df <- data.frame(hid=df_tnc_trip$HOUSEID,
+                 pid=df_tnc_trip$PERSONID,
+                 w=df_tnc_trip$WTPERFIN*365,
+                 t=df_tnc_trip$STRTTIME,
+                 edu=df_tnc_trip$EDUC,
+                 mode=df_tnc_trip$TRPTRANS)
+
+#cleaning
+lambda <- function(x) as.numeric(as.character(x)) > 0
+df <- df[complete.cases(df)&lambda(df$edu),]
+df <- df[!(df$hid=='40162565'&df$pid=='01'),]
+df$mode <- factor(as.character(df$mode))
+df$edu <- factor(as.character(df$edu))
+df <- df[order(df$hid,df$pid,df$t),]
+
+id <- as.data.frame(table(df$hid,df$pid))
+id <- id[id$Freq>0,]
+id <- id[order(id$Var1,id$Var2),]
+```
+
+## 1-gram Model
+
+```{r}
+fully_pooling <- function(mode,pairs){
+  temp <- as.data.frame(table(pairs$m1,pairs$m2))
+  temp <- data.frame(temp[temp$Freq>0,1:2])
+  res <- c()
+  for(i in 1:nrow(temp)){
+    res <- c(res,sum(pairs[pairs$m1==temp[i,1]&pairs$m2==temp[i,2],]$total)/sum(mode[mode$mode==temp[i,1],]$total))
+  }
+  temp <- cbind(temp,res=res)
+  return(temp)
+}
+
+no_pooling <- function(mode,pairs){
+  temp <- data.frame(pairs[,1:3])
+  res <- c()
+  for(i in 1:nrow(temp)){
+    res <- c(res,pairs[pairs$edu==temp[i,1]&pairs$m1==temp[i,2]&pairs$m2==temp[i,3],]$total/mode[mode$edu==temp[i,1]&mode$mode==temp[i,2],]$total)
+  }
+  temp <- cbind(temp,res=res)
+  return(temp)
+}
+
+partial_pooling <- function(mode,pairs){
+  temp <- pairs[,1:3]
+  temp1 <- data.frame(no_pooling(mode,pairs))
+  k <- c()
+  for(i in unique(mode$edu)){
+    temp2 <- temp[temp$edu==i,]
+    a <- c()
+    b <- c()
+    p <- c()
+    for(j in 1:nrow(temp2)){
+      p <- c(p,temp1[temp1[,1]==temp2[j,1]&temp1[,2]==temp2[j,2]&temp1[,3]==temp2[j,3],4])
+      a <- c(a,sum(pairs[pairs$m1==temp2[j,2]&pairs$m2==temp2[j,3],]$total))
+      b <- c(b,sum(mode[mode$mode==temp2[j,2],]$total))
+    }
+    k <- c(k,mean(p-a/b))
+  }
+  res <- c()
+  for(i in 1:nrow(temp)){
+    res <- c(res,k[temp[i,1]]+(sum(pairs[pairs$m1==temp[i,2]&pairs$m2==temp[i,3],]$total))/sum(mode[mode$mode==temp[i,2],]$total))
+  }
+  temp <- cbind(temp,res=res)
+  return(temp)
+}
+```
+
+## 5-fold Cross Validation
+
+```{r}
+library(dplyr)
+
+set.seed(2018)
+
+mse1 <- c()
+mae1 <- c()
+mse2 <- c()
+mae2 <- c()
+mse3 <- c()
+mae3 <- c()
+
+for(j in 1:5){
+  #data division
+  if(j!=5){
+    id_index <- c((1+(j-1)*3142),(j*3142))
+  }
+  else{
+    id_index <- c((1+(j-1)*3142),nrow(id))
+  }
+  if(j==1){
+    index <- 1:(sum(id[1:id_index[2],]$Freq))
+  }
+  else{
+    index <- (sum(id[1:(id_index[1]-1),]$Freq)):(sum(id[1:id_index[2],]$Freq))
+  }
+  train <- df[-index,]
+  test <- df[index,]
+  #marginal distribution
+  mode_train <- train %>% group_by(edu,mode) %>% summarise(total=sum(w))
+  mode_test <- test %>% group_by(edu,mode) %>% summarise(total=sum(w))
+  mode_train <- data.frame(mode_train)
+  mode_test <- data.frame(mode_test)
+  mode_train$edu <- as.numeric(as.character(mode_train$edu))
+  mode_train$mode <- as.numeric(as.character(mode_train$mode))
+  mode_test$edu <- as.numeric(as.character(mode_test$edu))
+  mode_test$mode <- as.numeric(as.character(mode_test$mode))
+  #conditional distribution
+  df_pairs_train <- data.frame()
+  for(i in 1:nrow(train)){
+    if(i==nrow(train)){
+      df_pairs_train <- rbind(df_pairs_train,data.frame(hid=train[i,]$hid,pid=train[i,]$pid,w=train[i,]$w,edu=train[i,]$edu,m1=as.character(train[i,]$mode),m2='0'))
+    }
+    else{
+      if(train[i,]$hid==train[i+1,]$hid&train[i,]$pid==train[i+1,]$pid){
+        df_pairs_train <- rbind(df_pairs_train,data.frame(hid=train[i,]$hid,pid=train[i,]$pid,w=train[i,]$w,edu=train[i,]$edu,m1=as.character(train[i,]$mode),m2=as.character(train[i+1,]$mode)))
+      }
+      else{
+        df_pairs_train <- rbind(df_pairs_train,data.frame(hid=train[i,]$hid,pid=train[i,]$pid,w=train[i,]$w,edu=train[i,]$edu,m1=as.character(train[i,]$mode),m2='0'))
+      }
+    }
+  }
+  pairs_train <- df_pairs_train %>% group_by(edu,m1,m2) %>% summarise(total=sum(w))
+  pairs_train <- data.frame(pairs_train)
+  pairs_train$edu <- as.numeric(as.character(pairs_train$edu))
+  pairs_train$m1 <- as.numeric(as.character(pairs_train$m1))
+  pairs_train$m2 <- as.numeric(as.character(pairs_train$m2))
+  
+  df_pairs_test <- data.frame()
+  for(i in 1:nrow(test)){
+    if(i==nrow(test)){
+      df_pairs_test <- rbind(df_pairs_test,data.frame(hid=test[i,]$hid,pid=test[i,]$pid,w=test[i,]$w,edu=test[i,]$edu,m1=as.character(test[i,]$mode),m2='0'))
+    }
+    else{
+      if(test[i,]$hid==test[i+1,]$hid&test[i,]$pid==test[i+1,]$pid){
+        df_pairs_test <- rbind(df_pairs_test,data.frame(hid=test[i,]$hid,pid=test[i,]$pid,w=test[i,]$w,edu=test[i,]$edu,m1=as.character(test[i,]$mode),m2=as.character(test[i+1,]$mode)))
+      }
+      else{
+        df_pairs_test <- rbind(df_pairs_test,data.frame(hid=test[i,]$hid,pid=test[i,]$pid,w=test[i,]$w,edu=test[i,]$edu,m1=as.character(test[i,]$mode),m2='0'))
+      }
+    }
+  }
+  pairs_test <- df_pairs_test %>% group_by(edu,m1,m2) %>% summarise(total=sum(w))
+  pairs_test <- data.frame(pairs_test)
+  pairs_test$edu <- as.numeric(as.character(pairs_test$edu))
+  pairs_test$m1 <- as.numeric(as.character(pairs_test$m1))
+  pairs_test$m2 <- as.numeric(as.character(pairs_test$m2))
+  print(nrow(pairs_test))
+  
+  A1 <- data.frame(fully_pooling(mode_train,pairs_train))
+  A2 <- data.frame(no_pooling(mode_train,pairs_train))
+  A3 <- data.frame(partial_pooling(mode_train,pairs_train))
+  validation <- data.frame(no_pooling(mode_test,pairs_test))
+  
+  for(l in 1:nrow(validation)){
+    if(nrow(A1[as.character(A1$Var1)==as.character(validation[l,2])&as.character(A1$Var2)==as.character(validation[l,3]),])>0){
+      mse1 <- c(mse1,(A1[as.character(A1$Var1)==as.character(validation[l,2])&as.character(A1$Var2)==as.character(validation[l,3]),3]-validation[l,4])^2)
+      mae1 <- c(mae1,abs(A1[as.character(A1$Var1)==as.character(validation[l,2])&as.character(A1$Var2)==as.character(validation[l,3]),3]-validation[l,4]))
+    }
+    if(nrow(A2[as.character(A2[,1])==as.character(validation[l,1])&as.character(A2[,2])==as.character(validation[l,2])&as.character(A2[,3])==as.character(validation[l,3]),])>0){
+      mse2 <- c(mse2,(A2[as.character(A2[,1])==as.character(validation[l,1])&as.character(A2[,2])==as.character(validation[l,2])&as.character(A2[,3])==as.character(validation[l,3]),4]-validation[l,4])^2)
+      mae2 <- c(mae2,abs(A2[as.character(A2[,1])==as.character(validation[l,1])&as.character(A2[,2])==as.character(validation[l,2])&as.character(A2[,3])==as.character(validation[l,3]),4]-validation[l,4]))
+    }
+    if(nrow(A3[as.character(A3[,1])==as.character(validation[l,1])&as.character(A3[,2])==as.character(validation[l,2])&as.character(A3[,3])==as.character(validation[l,3]),])>0){
+      mse3 <- c(mse3,(A3[as.character(A3[,1])==as.character(validation[l,1])&as.character(A3[,2])==as.character(validation[l,2])&as.character(A3[,3])==as.character(validation[l,3]),4]-validation[l,4])^2)
+      mae3 <- c(mae3,abs(A3[as.character(A3[,1])==as.character(validation[l,1])&as.character(A3[,2])==as.character(validation[l,2])&as.character(A3[,3])==as.character(validation[l,3]),4]-validation[l,4]))
+    }
+  }
+  print(length(mse1))
+  print(length(mse2))
+  print(length(mse3))
+}
+```
+
+## Results
+
+```{r}
+library(knitr)
+
+kable(data.frame(Method=c('fully pooling','no pooling','partial pooling'),
+                 MSE=c(mean(mse1),mean(mse2),mean(mse3)),
+                 MAE=c(mean(mae1),mean(mae2),mean(mae3))))
+
+boxplot(c(mse1,mse2,mse3)~c(rep('f',length(mse1)),rep('n',length(mse2)),rep('p',length(mse3))))
+boxplot(c(mae1,mae2,mae3)~c(rep('f',length(mse1)),rep('n',length(mse2)),rep('p',length(mse3))))
+```
